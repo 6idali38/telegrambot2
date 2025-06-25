@@ -1,12 +1,14 @@
 import telebot
+from flask import Flask, request
 from datetime import datetime
-from keep_alive import keep_alive  # لإبقاء البوت شغال 24/24
+import os
 
 # 🔐 Token et ID du groupe
-TOKEN = '7800030017:AAFQW30A4zzO-Awj5W388Rink5gx4zQQDm4'
+TOKEN = '7800030017:AAFSqyNM91DyyB0693OqwM3rat739iBuQrM'
 GROUP_ID = -1002844644447
 
 bot = telebot.TeleBot(TOKEN)
+app = Flask(__name__)
 
 # 📋 Menu
 menu_items = {
@@ -22,7 +24,6 @@ menu_items = {
     "🍔 Krabs Burgher": "commande: Krabs Burgher"
 }
 
-# 🚀 Commande /start → Affiche le menu
 @bot.message_handler(commands=['start'])
 def send_menu(message):
     markup = telebot.types.InlineKeyboardMarkup()
@@ -34,7 +35,6 @@ def send_menu(message):
     )
     bot.send_message(message.chat.id, "📋 Bienvenue dans notre menu ! Veuillez choisir un plat ci-dessous :", reply_markup=markup)
 
-# 🖱️ Gérer les clics sur les boutons
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback(call):
     item = call.data
@@ -47,18 +47,32 @@ def handle_callback(call):
         bot.answer_callback_query(call.id, text="✅ Votre commande a été envoyée !")
 
     elif item == "photos":
-        bot.send_photo(call.message.chat.id, "AgACAgQAAxkBAAIC8mhZI8WEEDEOdok1TVkmU7zbOEf8AALmxjEbusXIUiyMZk9g-CySAQADAgADeAADNgQ", caption="🍔 Burger sushi – 10 €")
-        # 🔁 أضف باقي الصور بنفس الشكل
+        try:
+            media_group = []
+            for i in range(1, 11):
+                path = f"images/photo{i}.jpeg"
+                caption = list(menu_items.keys())[i-1] if i-1 < len(menu_items) else ""
+                media_group.append(telebot.types.InputMediaPhoto(open(path, "rb"), caption=caption))
+            bot.send_media_group(call.message.chat.id, media_group)
+        except Exception as e:
+            bot.send_message(call.message.chat.id, "⚠️ Une erreur est survenue lors de l'envoi des photos.")
+            print(f"❌ Erreur: {e}")
 
     elif item == "contact":
         bot.send_message(call.message.chat.id, "📞 Pour toute information, contactez-nous sur E-mail : elisavasile0603@gmail.com")
         bot.answer_callback_query(call.id)
 
-# ✅ Logs
-print("✅ Le bot est en ligne...")
+@app.route('/')
+def index():
+    return "Bot is running", 200
 
-# 🧠 Garder البوت شغال 24/24
-keep_alive()
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    update = telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
+    bot.process_new_updates([update])
+    return '', 200
 
-# ▶️ Démarrage du bot
-bot.infinity_polling()
+if __name__ == "__main__":
+    bot.remove_webhook()
+    bot.set_webhook(url=f"https://telegrambot2-vkgt.onrender.com/7800030017:AAFSqyNM91DyyB0693OqwM3rat739iBuQrM")
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
