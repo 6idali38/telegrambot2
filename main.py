@@ -49,11 +49,30 @@ def handle_callback(call):
     elif item == "photos":
         try:
             media_group = []
+            captions = [
+                "🍔 Burger sushi – 200g – 10 €",
+                "🍣 Sandwich sushi – 120g – 8 €",
+                "🌭 Hot dog sushi – 250g – 10 €",
+                "🍗 Ailes de poulet épicées (6 pièces) – 7 €",
+                "🍟🥔 Nuggets (10 pièces) – 8 €",
+                "🌭 Saucisses en pâte – 8 €",
+                "🍢 Kebab de poitrine de poulet – 200g – 8 €",
+                "🍟 Frites – 3,5 €",
+                "🧃 Jus de fruits naturel – 8 €",
+                "🍔 Krabs Burgher"
+            ]
             for i in range(1, 11):
                 path = f"images/photo{i}.jpeg"
-                caption = list(menu_items.keys())[i-1] if i-1 < len(menu_items) else ""
-                media_group.append(telebot.types.InputMediaPhoto(open(path, "rb"), caption=caption))
-            bot.send_media_group(call.message.chat.id, media_group)
+                if os.path.exists(path):
+                    with open(path, "rb") as photo:
+                        media_group.append(telebot.types.InputMediaPhoto(photo.read(), caption=captions[i-1]))
+                else:
+                    print(f"❌ الصورة photo{i}.jpeg غير موجودة!")
+
+            if media_group:
+                bot.send_media_group(call.message.chat.id, media_group)
+            else:
+                bot.send_message(call.message.chat.id, "⚠️ Aucun fichier photo trouvé à envoyer.")
         except Exception as e:
             bot.send_message(call.message.chat.id, "⚠️ Une erreur est survenue lors de l'envoi des photos.")
             print(f"❌ Erreur: {e}")
@@ -74,5 +93,5 @@ def webhook():
 
 if __name__ == "__main__":
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://telegrambot2-vkgt.onrender.com/7800030017:AAFSqyNM91DyyB0693OqwM3rat739iBuQrM")
+    bot.set_webhook(url=f"https://telegrambot2-vkgt.onrender.com/{TOKEN}")
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
